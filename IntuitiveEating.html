@@ -805,17 +805,17 @@
 
         <div class="checkboxes">
           <label class="checkbox-row">
-            <input type="checkbox" id="no-distraction" />
+            <input type="checkbox" id="no-distraction" checked />
             <span>No distraction</span>
           </label>
           <label class="checkbox-row">
-            <input type="checkbox" id="intentional-breaks" />
+            <input type="checkbox" id="intentional-breaks" checked />
             <span>Intentional breaks</span>
           </label>
         </div>
 
         <div class="score-preview tier-mid" id="score-preview" aria-live="polite">
-          <span class="score-preview-value" id="live-score">58</span>
+          <span class="score-preview-value" id="live-score">100</span>
           <span class="score-preview-label">/ 100 preview</span>
         </div>
 
@@ -823,7 +823,7 @@
           <legend>Before eating — how hungry?</legend>
           <output class="scale-output" id="pre-output" for="pre-hunger">5</output>
           <p class="scale-desc" id="pre-desc">Starting to feel hungry</p>
-          <input type="range" id="pre-hunger" min="1" max="10" value="5" step="1" />
+          <input type="range" id="pre-hunger" min="1" max="10" value="3" step="1" />
           <div class="scale-labels">
             <span>1 · starving</span>
             <span>10 · stuffed</span>
@@ -834,7 +834,7 @@
           <legend>After eating — how full?</legend>
           <output class="scale-output" id="post-output" for="post-fullness">6</output>
           <p class="scale-desc" id="post-desc">Satisfied, but could eat a little more</p>
-          <input type="range" id="post-fullness" min="1" max="10" value="6" step="1" />
+          <input type="range" id="post-fullness" min="1" max="10" value="7" step="1" />
           <div class="scale-labels">
             <span>1 · starving</span>
             <span>10 · stuffed</span>
@@ -1346,6 +1346,27 @@
           mealDateInput.max = today;
         }
 
+        function setMealTypeByTime() {
+          const now = new Date();
+          const hours = now.getHours();
+          const minutes = now.getMinutes();
+          const currentTime = hours + minutes / 60;
+
+          let mealType = "Snack";
+
+          if (currentTime >= 6 && currentTime < 11) {
+            mealType = "Breakfast";
+          } else if (currentTime >= 11 && currentTime < 14.5) {
+            mealType = "Lunch";
+          } else if (currentTime >= 14.5 && currentTime < 18) {
+            mealType = "Snack";
+          } else if (currentTime >= 18 && currentTime < 23) {
+            mealType = "Dinner";
+          }
+
+          mealTypeSelect.value = mealType;
+        }
+
         function timestampFromMealDate(dateStr) {
           const parts = dateStr.split("-").map(Number);
           const now = new Date();
@@ -1826,6 +1847,7 @@
         initCollapsible(pastWeeksSection, pastWeeksToggle, "pastWeeksCollapsed");
 
         setMealDateToToday();
+        setMealTypeByTime();
         initWeekTabs();
         onFormChange();
         refresh();
