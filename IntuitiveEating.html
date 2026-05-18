@@ -9,14 +9,14 @@
     <meta name="theme-color" content="#3d6b8f" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="Meal Log" />
+    <meta name="apple-mobile-web-app-title" content="Intuitive Eating" />
     <meta name="description" content="Track meals with the intuitive eating hunger-fullness scale" />
     <link
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%233d6b8f'/%3E%3Ccircle cx='256' cy='200' r='72' fill='%23e8f2fa'/%3E%3Cpath fill='%23fff' d='M160 300c0-53 43-96 96-96s96 43 96 96v24H160v-24z'/%3E%3C/svg%3E"
     />
     <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%233d6b8f'/%3E%3Ccircle cx='256' cy='200' r='72' fill='%23e8f2fa'/%3E%3Cpath fill='%23fff' d='M160 300c0-53 43-96 96-96s96 43 96 96v24H160v-24z'/%3E%3C/svg%3E" />
-    <title>Meal Log</title>
+    <title>Intuitive Eating</title>
     <style>
       :root {
         --bg: #f4f7fa;
@@ -147,7 +147,8 @@
         font-size: 0.9rem;
         margin-bottom: 0.4rem;
       }
-      .field select {
+      .field select,
+      .field input[type="date"] {
         width: 100%;
         padding: 0.65rem 0.75rem;
         font-size: 1rem;
@@ -156,11 +157,19 @@
         border-radius: 10px;
         background: var(--bg);
         color: var(--text);
+      }
+      .field select {
         -webkit-appearance: none;
         appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%235a6d7d' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
         background-repeat: no-repeat;
         background-position: right 0.75rem center;
+      }
+      .field-hint {
+        margin: 0.35rem 0 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-weight: 400;
       }
       .checkboxes {
         display: flex;
@@ -467,6 +476,43 @@
       .week-history.collapsible.is-collapsed .collapsible-trigger {
         margin-bottom: 0;
       }
+      .week-tabs {
+        display: flex;
+        gap: 0.35rem;
+        margin-bottom: 0.75rem;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 0.15rem;
+      }
+      .week-tabs::-webkit-scrollbar {
+        display: none;
+      }
+      .week-tab {
+        flex-shrink: 0;
+        padding: 0.45rem 0.7rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        font-family: inherit;
+        border: 1px solid var(--accent-soft);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text-muted);
+        cursor: pointer;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease,
+          border-color 0.15s ease;
+      }
+      .week-tab:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .week-tab[aria-selected="true"] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
       .week-nav {
         display: flex;
         align-items: center;
@@ -743,6 +789,12 @@
 
       <form class="panel log-form" id="log-form">
         <div class="field">
+          <label for="meal-date">Date</label>
+          <input type="date" id="meal-date" name="mealDate" required />
+          <p class="field-hint">Defaults to today — change only when logging a meal you forgot.</p>
+        </div>
+
+        <div class="field">
           <label for="meal-type">Meal type</label>
           <select id="meal-type" name="mealType" required>
             <option value="Breakfast">Breakfast</option>
@@ -810,16 +862,24 @@
         <div class="section-header">
           <h2>Weekly scores</h2>
         </div>
-        <div class="week-nav">
-          <button type="button" class="btn btn-icon" id="week-prev" aria-label="Previous week">‹</button>
-          <span class="week-label" id="week-label">This week</span>
-          <button type="button" class="btn btn-icon" id="week-next" aria-label="Next week">›</button>
-        </div>
+        <div
+          class="week-tabs"
+          id="week-tabs"
+          role="tablist"
+          aria-label="Filter weekly scores by meal type"
+        ></div>
+        <div id="week-view" role="tabpanel" aria-labelledby="week-tab-all">
+          <div class="week-nav">
+            <button type="button" class="btn btn-icon" id="week-prev" aria-label="Previous week">‹</button>
+            <span class="week-label" id="week-label">This week</span>
+            <button type="button" class="btn btn-icon" id="week-next" aria-label="Next week">›</button>
+          </div>
         <div class="week-summary">
           <div class="week-summary-score" id="week-avg-score">—</div>
           <div class="week-summary-meta" id="week-summary-meta">avg score · 0 meals</div>
         </div>
-        <div class="week-chart" id="week-chart" aria-hidden="true"></div>
+          <div class="week-chart" id="week-chart" aria-hidden="true"></div>
+        </div>
         <div class="week-history collapsible" id="past-weeks-section">
           <button
             type="button"
@@ -885,6 +945,11 @@
           "score",
         ];
         const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
+        const WEEK_TAB_OPTIONS = [{ id: "", label: "All" }].concat(
+          MEAL_TYPES.map(function (type) {
+            return { id: type, label: type };
+          })
+        );
 
         const SCALE_LABELS = {
           1: "Starving, no energy, very weak",
@@ -911,6 +976,7 @@
         const preField = preSlider.closest(".scale-field");
         const postField = postSlider.closest(".scale-field");
         const form = document.getElementById("log-form");
+        const mealDateInput = document.getElementById("meal-date");
         const mealTypeSelect = document.getElementById("meal-type");
         const noDistractionCheck = document.getElementById("no-distraction");
         const intentionalBreaksCheck = document.getElementById("intentional-breaks");
@@ -930,6 +996,7 @@
         const weekAvgScoreEl = document.getElementById("week-avg-score");
         const weekSummaryMetaEl = document.getElementById("week-summary-meta");
         const weekChartEl = document.getElementById("week-chart");
+        const weekTabsEl = document.getElementById("week-tabs");
         const weekHistoryListEl = document.getElementById("week-history-list");
         const exportBtn = document.getElementById("export-btn");
         const importBtn = document.getElementById("import-btn");
@@ -940,6 +1007,68 @@
         const pastWeeksToggle = document.getElementById("past-weeks-toggle");
 
         let weekOffset = 0;
+        let weekMealFilter = "";
+
+        function mealTypeOf(meal) {
+          return MEAL_TYPES.indexOf(meal.mealType) >= 0 ? meal.mealType : "Snack";
+        }
+
+        function filterWeekMeals(meals) {
+          if (!weekMealFilter) return meals;
+          return meals.filter(function (meal) {
+            return mealTypeOf(meal) === weekMealFilter;
+          });
+        }
+
+        function weekMealCountLabel(count) {
+          if (!weekMealFilter) {
+            return count + " meal" + (count === 1 ? "" : "s");
+          }
+          return (
+            count +
+            " " +
+            weekMealFilter.toLowerCase() +
+            (count === 1 ? "" : "s")
+          );
+        }
+
+        function initWeekTabs() {
+          const ui = loadUiState();
+          if (WEEK_TAB_OPTIONS.some(function (t) { return t.id === ui.weekMealFilter; })) {
+            weekMealFilter = ui.weekMealFilter || "";
+          }
+          weekTabsEl.replaceChildren();
+          for (const tab of WEEK_TAB_OPTIONS) {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "week-tab";
+            btn.id = "week-tab-" + (tab.id || "all");
+            btn.setAttribute("role", "tab");
+            btn.setAttribute("aria-selected", tab.id === weekMealFilter ? "true" : "false");
+            btn.setAttribute("aria-controls", "week-view");
+            btn.textContent = tab.label;
+            btn.dataset.filter = tab.id;
+            btn.addEventListener("click", function () {
+              if (weekMealFilter === tab.id) return;
+              weekMealFilter = tab.id;
+              const state = loadUiState();
+              state.weekMealFilter = weekMealFilter;
+              saveUiState(state);
+              refresh();
+            });
+            weekTabsEl.appendChild(btn);
+          }
+        }
+
+        function syncWeekTabs() {
+          let activeTabId = "week-tab-all";
+          for (const btn of weekTabsEl.querySelectorAll(".week-tab")) {
+            const selected = btn.dataset.filter === weekMealFilter;
+            btn.setAttribute("aria-selected", selected ? "true" : "false");
+            if (selected) activeTabId = btn.id;
+          }
+          document.getElementById("week-view").setAttribute("aria-labelledby", activeTabId);
+        }
 
         function newId() {
           if (crypto.randomUUID) return crypto.randomUUID();
@@ -1212,6 +1341,27 @@
           return y + "-" + m + "-" + d;
         }
 
+        function setMealDateToToday() {
+          const today = dateKey(new Date());
+          mealDateInput.value = today;
+          mealDateInput.max = today;
+        }
+
+        function timestampFromMealDate(dateStr) {
+          const parts = dateStr.split("-").map(Number);
+          const now = new Date();
+          const dt = new Date(
+            parts[0],
+            parts[1] - 1,
+            parts[2],
+            now.getHours(),
+            now.getMinutes(),
+            now.getSeconds(),
+            now.getMilliseconds()
+          );
+          return dt.toISOString();
+        }
+
         function weekKey(date) {
           const d = new Date(date);
           d.setHours(0, 0, 0, 0);
@@ -1348,7 +1498,7 @@
         }
 
         function dailyAveragesForWeek(meals, weekStart) {
-          const weekMeals = mealsInWeek(meals, weekStart);
+          const weekMeals = filterWeekMeals(mealsInWeek(meals, weekStart));
           const buckets = {};
           for (let i = 0; i < 7; i++) {
             const day = addDays(weekStart, i);
@@ -1425,6 +1575,7 @@
         }
 
         function renderWeekly(meals) {
+          syncWeekTabs();
           const weekStart = getWeekStart(weekOffset);
           const { days, weekMeals } = dailyAveragesForWeek(meals, weekStart);
           const avg = weekAverageScore(weekMeals);
@@ -1449,10 +1600,7 @@
           }
 
           weekSummaryMetaEl.textContent =
-            "avg score · " +
-            weekMeals.length +
-            " meal" +
-            (weekMeals.length === 1 ? "" : "s");
+            "avg score · " + weekMealCountLabel(weekMeals.length);
 
           weekChartEl.replaceChildren();
           const todayKey = dateKey(new Date());
@@ -1489,7 +1637,7 @@
           for (let i = 0; i < WEEKS_HISTORY; i++) {
             const offset = -i;
             const ws = getWeekStart(offset);
-            const wm = mealsInWeek(meals, ws);
+            const wm = filterWeekMeals(mealsInWeek(meals, ws));
             const wAvg = weekAverageScore(wm);
             const li = document.createElement("li");
             li.className = "week-history-item";
@@ -1622,12 +1770,17 @@
 
         form.addEventListener("submit", function (e) {
           e.preventDefault();
+          const mealDate = mealDateInput.value;
+          if (!mealDate || mealDate > dateKey(new Date())) {
+            showToast("Choose today or an earlier date");
+            return;
+          }
           const draft = getFormDraft();
           const score = computeMealScore(draft);
           const data = loadData();
           data.meals.push({
             id: newId(),
-            timestamp: new Date().toISOString(),
+            timestamp: timestampFromMealDate(mealDate),
             mealType: mealTypeSelect.value,
             preHunger: draft.preHunger,
             postFullness: draft.postFullness,
@@ -1638,6 +1791,7 @@
           saveData(data);
           noDistractionCheck.checked = false;
           intentionalBreaksCheck.checked = false;
+          setMealDateToToday();
           refresh();
           updateLiveScore();
           showToast("Saved · score " + score);
@@ -1672,6 +1826,8 @@
         initCollapsible(recentSection, recentToggle, "recentCollapsed");
         initCollapsible(pastWeeksSection, pastWeeksToggle, "pastWeeksCollapsed");
 
+        setMealDateToToday();
+        initWeekTabs();
         onFormChange();
         refresh();
       })();
