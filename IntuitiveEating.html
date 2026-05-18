@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#3d6b8f" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Meal Log" />
+    <meta name="description" content="Track meals with the intuitive eating hunger-fullness scale" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%233d6b8f'/%3E%3Ccircle cx='256' cy='200' r='72' fill='%23e8f2fa'/%3E%3Cpath fill='%23fff' d='M160 300c0-53 43-96 96-96s96 43 96 96v24H160v-24z'/%3E%3C/svg%3E"
+    />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%233d6b8f'/%3E%3Ccircle cx='256' cy='200' r='72' fill='%23e8f2fa'/%3E%3Cpath fill='%23fff' d='M160 300c0-53 43-96 96-96s96 43 96 96v24H160v-24z'/%3E%3C/svg%3E" />
+    <title>Meal Log</title>
+    <style>
+      :root {
+        --bg: #f4f7fa;
+        --surface: #ffffff;
+        --text: #1a2b3c;
+        --text-muted: #5a6d7d;
+        --accent: #3d6b8f;
+        --accent-soft: #d4e4f0;
+        --zone: #4a90c4;
+        --zone-bg: #e8f2fa;
+        --danger: #b54a4a;
+        --good: #2d7a4f;
+        --good-bg: #e6f4ec;
+        --warn: #9a6b1a;
+        --warn-bg: #faf3e0;
+        --radius: 16px;
+        --shadow: 0 4px 24px rgba(26, 43, 60, 0.08);
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        -webkit-text-size-adjust: 100%;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+        font-size: 16px;
+        line-height: 1.45;
+        color: var(--text);
+        background: var(--bg);
+        -webkit-tap-highlight-color: transparent;
+      }
+      .app {
+        max-width: 28rem;
+        margin: 0 auto;
+        padding: calc(1rem + var(--safe-top)) 1rem calc(2rem + var(--safe-bottom));
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 1.25rem;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        margin: 0.25rem 0 0;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+      .streaks {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-bottom: 1.25rem;
+      }
+      .streak-card {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+      }
+      .streak-value {
+        display: block;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.1;
+      }
+      .streak-label {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: lowercase;
+      }
+      .panel {
+        background: var(--surface);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        box-shadow: var(--shadow);
+        margin-bottom: 1.25rem;
+      }
+      .panel h2 {
+        margin: 0 0 0.75rem;
+        font-size: 1.1rem;
+      }
+      .field {
+        margin-bottom: 1rem;
+      }
+      .field label,
+      .field legend {
+        display: block;
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.4rem;
+      }
+      .field select {
+        width: 100%;
+        padding: 0.65rem 0.75rem;
+        font-size: 1rem;
+        font-family: inherit;
+        border: 1px solid var(--accent-soft);
+        border-radius: 10px;
+        background: var(--bg);
+        color: var(--text);
+        -webkit-appearance: none;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%235a6d7d' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 0.75rem center;
+      }
+      .checkboxes {
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+        margin-bottom: 1rem;
+      }
+      .checkbox-row {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        font-size: 0.95rem;
+        cursor: pointer;
+      }
+      .checkbox-row input {
+        width: 1.25rem;
+        height: 1.25rem;
+        accent-color: var(--accent);
+        flex-shrink: 0;
+      }
+      .score-preview {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        gap: 0.35rem;
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        border-radius: 12px;
+        background: var(--bg);
+      }
+      .score-preview-value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+      }
+      .score-preview-label {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+      .score-preview.tier-high {
+        background: var(--good-bg);
+      }
+      .score-preview.tier-high .score-preview-value {
+        color: var(--good);
+      }
+      .score-preview.tier-mid {
+        background: var(--warn-bg);
+      }
+      .score-preview.tier-mid .score-preview-value {
+        color: var(--warn);
+      }
+      .score-preview.tier-low {
+        background: #f5e8e8;
+      }
+      .score-preview.tier-low .score-preview-value {
+        color: var(--danger);
+      }
+      .scale-field {
+        border: none;
+        margin: 0 0 1.5rem;
+        padding: 0;
+      }
+      .scale-field:last-of-type {
+        margin-bottom: 1rem;
+      }
+      .scale-field legend {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.75rem;
+        padding: 0;
+      }
+      .scale-output {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-radius: 12px;
+        margin-bottom: 0.35rem;
+      }
+      .scale-desc {
+        margin: 0 0 1rem;
+        font-size: 0.9rem;
+        color: var(--text-muted);
+        min-height: 2.6em;
+      }
+      .scale-field.in-zone .scale-output {
+        background: var(--zone-bg);
+        color: var(--zone);
+      }
+      input[type="range"] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 2.75rem;
+        background: transparent;
+        cursor: pointer;
+        touch-action: pan-y;
+      }
+      input[type="range"]::-webkit-slider-runnable-track {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(
+          to right,
+          #e8c4c4 0%,
+          #f0e0c8 25%,
+          var(--zone) 35%,
+          var(--zone) 65%,
+          #f0e0c8 75%,
+          #e8c4c4 100%
+        );
+      }
+      input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 28px;
+        height: 28px;
+        margin-top: -10px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 3px solid var(--accent);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+      input[type="range"]::-moz-range-track {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(
+          to right,
+          #e8c4c4 0%,
+          #f0e0c8 25%,
+          var(--zone) 35%,
+          var(--zone) 65%,
+          #f0e0c8 75%,
+          #e8c4c4 100%
+        );
+      }
+      input[type="range"]::-moz-range-thumb {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: var(--surface);
+        border: 3px solid var(--accent);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+      .scale-labels {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        margin-top: 0.25rem;
+      }
+      .zone-hint {
+        margin: 0 0 1rem;
+        padding: 0.75rem;
+        font-size: 0.8rem;
+        color: var(--zone);
+        background: var(--zone-bg);
+        border-radius: 10px;
+        text-align: center;
+      }
+      .scoring-help {
+        margin: 0 0 1rem;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+      .scoring-help summary {
+        cursor: pointer;
+        color: var(--accent);
+        font-weight: 500;
+      }
+      .scoring-help ul {
+        margin: 0.5rem 0 0;
+        padding-left: 1.1rem;
+      }
+      .scoring-help li {
+        margin-bottom: 0.25rem;
+      }
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 0.9rem 1.25rem;
+        font-size: 1rem;
+        font-weight: 600;
+        font-family: inherit;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: transform 0.12s ease;
+      }
+      .btn:active {
+        transform: scale(0.98);
+      }
+      .btn-primary {
+        color: #fff;
+        background: var(--accent);
+      }
+      .btn-ghost {
+        width: auto;
+        padding: 0.4rem 0.75rem;
+        font-size: 0.85rem;
+        color: var(--danger);
+        background: transparent;
+      }
+      .btn-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        background: var(--bg);
+        color: var(--accent);
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+      .btn-sm {
+        font-weight: 500;
+      }
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+      }
+      .section-header h2 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+      .week-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+      }
+      .week-label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-align: center;
+        flex: 1;
+      }
+      .week-summary {
+        text-align: center;
+        margin-bottom: 1rem;
+      }
+      .week-summary-score {
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.1;
+      }
+      .week-summary-meta {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+      .week-chart {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 0.25rem;
+        height: 7rem;
+        margin-bottom: 0.5rem;
+      }
+      .bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100%;
+        min-width: 0;
+      }
+      .bar-value {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        min-height: 1rem;
+        margin-bottom: 0.15rem;
+      }
+      .bar-track {
+        flex: 1;
+        width: 100%;
+        max-width: 2rem;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+      }
+      .bar-fill {
+        width: 100%;
+        border-radius: 6px 6px 2px 2px;
+        background: var(--accent-soft);
+        min-height: 4px;
+        transition: height 0.2s ease;
+      }
+      .bar-fill.has-data {
+        background: var(--accent);
+      }
+      .bar-fill.tier-high {
+        background: var(--good);
+      }
+      .bar-fill.tier-mid {
+        background: var(--warn);
+      }
+      .bar-fill.tier-low {
+        background: var(--danger);
+      }
+      .bar-day {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 0.35rem;
+      }
+      .bar-col.is-today .bar-day {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .week-history {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--accent-soft);
+      }
+      .week-history h3 {
+        margin: 0 0 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 600;
+      }
+      .week-history-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+      }
+      .week-history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        padding: 0.4rem 0;
+      }
+      .week-history-item button {
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: none;
+        border: none;
+        font: inherit;
+        color: inherit;
+        padding: 0.35rem 0.5rem;
+        margin: -0.35rem -0.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: left;
+      }
+      .week-history-item button:active {
+        background: var(--bg);
+      }
+      .week-history-item.is-selected button {
+        background: var(--accent-soft);
+      }
+      .week-history-score {
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .meal-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      .meal-list:empty {
+        display: none;
+      }
+      .meal-item {
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 0.85rem 1rem;
+        box-shadow: var(--shadow);
+        display: grid;
+        gap: 0.35rem;
+      }
+      .meal-row-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      .meal-row-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-shrink: 0;
+      }
+      .btn-delete {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        font-family: inherit;
+        font-weight: 500;
+        color: var(--danger);
+        background: transparent;
+        border: 1px solid #e8c4c4;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      .btn-delete:active {
+        background: #faeaea;
+      }
+      .meal-type {
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
+      .meal-score-pill {
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.15rem 0.5rem;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        flex-shrink: 0;
+      }
+      .meal-score-pill.tier-high {
+        background: var(--good-bg);
+        color: var(--good);
+      }
+      .meal-score-pill.tier-mid {
+        background: var(--warn-bg);
+        color: var(--warn);
+      }
+      .meal-score-pill.tier-low {
+        background: #f5e8e8;
+        color: var(--danger);
+      }
+      .meal-time {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+      }
+      .meal-scores {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+      .badge {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .badge.in-zone {
+        background: var(--zone-bg);
+        color: var(--zone);
+      }
+      .badge.habit {
+        background: var(--good-bg);
+        color: var(--good);
+      }
+      .empty-state {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+        margin: 1rem 0;
+      }
+      .empty-state.hidden {
+        display: none;
+      }
+      .toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(1.5rem + var(--safe-bottom));
+        transform: translateX(-50%) translateY(120%);
+        background: var(--text);
+        color: #fff;
+        padding: 0.65rem 1.25rem;
+        border-radius: 999px;
+        font-size: 0.9rem;
+        font-weight: 500;
+        opacity: 0;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        z-index: 100;
+        pointer-events: none;
+      }
+      .toast.visible {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>Intuitive Eating Tracker</h1>
+        <p class="subtitle">Intuitive eating · hunger &amp; fullness</p>
+      </header>
+
+      <section class="streaks" aria-label="Streaks">
+        <div class="streak-card">
+          <span class="streak-value" id="day-streak">0</span>
+          <span class="streak-label">day streak</span>
+        </div>
+        <div class="streak-card">
+          <span class="streak-value" id="week-streak">0</span>
+          <span class="streak-label">week streak</span>
+        </div>
+      </section>
+
+      <form class="panel log-form" id="log-form">
+        <div class="field">
+          <label for="meal-type">Meal type</label>
+          <select id="meal-type" name="mealType" required>
+            <option value="Breakfast">Breakfast</option>
+            <option value="Lunch" selected>Lunch</option>
+            <option value="Dinner">Dinner</option>
+            <option value="Snack">Snack</option>
+          </select>
+        </div>
+
+        <div class="checkboxes">
+          <label class="checkbox-row">
+            <input type="checkbox" id="no-distraction" />
+            <span>No distraction</span>
+          </label>
+          <label class="checkbox-row">
+            <input type="checkbox" id="intentional-breaks" />
+            <span>Intentional breaks</span>
+          </label>
+        </div>
+
+        <div class="score-preview tier-mid" id="score-preview" aria-live="polite">
+          <span class="score-preview-value" id="live-score">58</span>
+          <span class="score-preview-label">/ 100 preview</span>
+        </div>
+
+        <fieldset class="scale-field">
+          <legend>Before eating — how hungry?</legend>
+          <output class="scale-output" id="pre-output" for="pre-hunger">5</output>
+          <p class="scale-desc" id="pre-desc">Starting to feel hungry</p>
+          <input type="range" id="pre-hunger" min="1" max="10" value="5" step="1" />
+          <div class="scale-labels">
+            <span>1 · starving</span>
+            <span>10 · stuffed</span>
+          </div>
+        </fieldset>
+
+        <fieldset class="scale-field">
+          <legend>After eating — how full?</legend>
+          <output class="scale-output" id="post-output" for="post-fullness">6</output>
+          <p class="scale-desc" id="post-desc">Satisfied, but could eat a little more</p>
+          <input type="range" id="post-fullness" min="1" max="10" value="6" step="1" />
+          <div class="scale-labels">
+            <span>1 · starving</span>
+            <span>10 · stuffed</span>
+          </div>
+        </fieldset>
+
+        <p class="zone-hint">Aim for the blue zone: hunger 3–4 before, fullness 6–7 after.</p>
+
+        <details class="scoring-help">
+          <summary>How scoring works (0–100)</summary>
+          <ul>
+            <li><strong>40 pts</strong> — hunger before eating in zone (3–4)</li>
+            <li><strong>40 pts</strong> — fullness after eating in zone (6–7)</li>
+            <li><strong>10 pts</strong> — no distraction while eating</li>
+            <li><strong>10 pts</strong> — intentional breaks during the meal</li>
+          </ul>
+          <p>Partial credit for near-zone hunger (2, 5) or fullness (5, 8).</p>
+        </details>
+
+        <button type="submit" class="btn btn-primary">Save meal</button>
+      </form>
+
+      <section class="panel weekly" aria-label="Weekly scores">
+        <div class="section-header">
+          <h2>Weekly scores</h2>
+        </div>
+        <div class="week-nav">
+          <button type="button" class="btn btn-icon" id="week-prev" aria-label="Previous week">‹</button>
+          <span class="week-label" id="week-label">This week</span>
+          <button type="button" class="btn btn-icon" id="week-next" aria-label="Next week">›</button>
+        </div>
+        <div class="week-summary">
+          <div class="week-summary-score" id="week-avg-score">—</div>
+          <div class="week-summary-meta" id="week-summary-meta">avg score · 0 meals</div>
+        </div>
+        <div class="week-chart" id="week-chart" aria-hidden="true"></div>
+        <div class="week-history">
+          <h3>Past weeks</h3>
+          <ul class="week-history-list" id="week-history-list"></ul>
+        </div>
+      </section>
+
+      <section class="history" aria-label="Recent meals">
+        <div class="section-header">
+          <h2>Recent</h2>
+          <button type="button" class="btn btn-ghost btn-sm" id="reset-btn">Reset all</button>
+        </div>
+        <ul class="meal-list" id="meal-list"></ul>
+        <p class="empty-state" id="empty-state">No meals logged yet.</p>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script>
+      (function () {
+        const STORAGE_KEY = "meal-tracker-data";
+        const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const WEEKS_HISTORY = 12;
+
+        const SCALE_LABELS = {
+          1: "Starving, no energy, very weak",
+          2: "Very hungry, low energy, weak and dizzy",
+          3: "Uncomfortably hungry, distracted, irritable",
+          4: "Hungry, stomach growling",
+          5: "Starting to feel hungry",
+          6: "Satisfied, but could eat a little more",
+          7: "Full but not uncomfortable",
+          8: "Overfull, somewhat uncomfortable",
+          9: "Stuffed, very uncomfortable",
+          10: "Extremely stuffed, nauseous",
+        };
+
+        const PRE_ZONE = new Set([3, 4]);
+        const POST_ZONE = new Set([6, 7]);
+
+        const preSlider = document.getElementById("pre-hunger");
+        const postSlider = document.getElementById("post-fullness");
+        const preOutput = document.getElementById("pre-output");
+        const postOutput = document.getElementById("post-output");
+        const preDesc = document.getElementById("pre-desc");
+        const postDesc = document.getElementById("post-desc");
+        const preField = preSlider.closest(".scale-field");
+        const postField = postSlider.closest(".scale-field");
+        const form = document.getElementById("log-form");
+        const mealTypeSelect = document.getElementById("meal-type");
+        const noDistractionCheck = document.getElementById("no-distraction");
+        const intentionalBreaksCheck = document.getElementById("intentional-breaks");
+        const liveScoreEl = document.getElementById("live-score");
+        const scorePreviewEl = document.getElementById("score-preview");
+        const mealList = document.getElementById("meal-list");
+        const emptyState = document.getElementById("empty-state");
+        const dayStreakEl = document.getElementById("day-streak");
+        const weekStreakEl = document.getElementById("week-streak");
+        const resetBtn = document.getElementById("reset-btn");
+        const toastEl = document.getElementById("toast");
+        const weekPrevBtn = document.getElementById("week-prev");
+        const weekNextBtn = document.getElementById("week-next");
+        const weekLabelEl = document.getElementById("week-label");
+        const weekAvgScoreEl = document.getElementById("week-avg-score");
+        const weekSummaryMetaEl = document.getElementById("week-summary-meta");
+        const weekChartEl = document.getElementById("week-chart");
+        const weekHistoryListEl = document.getElementById("week-history-list");
+
+        let weekOffset = 0;
+
+        function newId() {
+          if (crypto.randomUUID) return crypto.randomUUID();
+          return Date.now().toString(36) + Math.random().toString(36).slice(2);
+        }
+
+        function hungerPoints(pre) {
+          if (pre === 3 || pre === 4) return 40;
+          if (pre === 2 || pre === 5) return 24;
+          if (pre === 1 || pre === 6) return 10;
+          return 0;
+        }
+
+        function fullnessPoints(post) {
+          if (post === 6 || post === 7) return 40;
+          if (post === 5 || post === 8) return 24;
+          if (post === 4 || post === 9) return 10;
+          return 0;
+        }
+
+        function computeMealScore(meal) {
+          let score = hungerPoints(meal.preHunger) + fullnessPoints(meal.postFullness);
+          if (meal.noDistraction) score += 10;
+          if (meal.intentionalBreaks) score += 10;
+          return score;
+        }
+
+        function scoreTier(score) {
+          if (score >= 75) return "tier-high";
+          if (score >= 45) return "tier-mid";
+          return "tier-low";
+        }
+
+        function applyTier(el, score) {
+          el.classList.remove("tier-high", "tier-mid", "tier-low");
+          el.classList.add(scoreTier(score));
+        }
+
+        function loadData() {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return { meals: [] };
+            const parsed = JSON.parse(raw);
+            const meals = Array.isArray(parsed.meals) ? parsed.meals : [];
+            let changed = false;
+            for (const meal of meals) {
+              if (!meal.id) {
+                meal.id = newId();
+                changed = true;
+              }
+            }
+            if (changed) saveData({ meals: meals });
+            return { meals: meals };
+          } catch {
+            return { meals: [] };
+          }
+        }
+
+        function deleteMeal(id) {
+          if (!confirm("Delete this meal entry?")) return;
+          const data = loadData();
+          data.meals = data.meals.filter(function (m) {
+            return m.id !== id;
+          });
+          saveData(data);
+          refresh();
+          showToast("Entry deleted");
+        }
+
+        function saveData(data) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function dateKey(date) {
+          const y = date.getFullYear();
+          const m = String(date.getMonth() + 1).padStart(2, "0");
+          const d = String(date.getDate()).padStart(2, "0");
+          return y + "-" + m + "-" + d;
+        }
+
+        function weekKey(date) {
+          const d = new Date(date);
+          d.setHours(0, 0, 0, 0);
+          const sunday = new Date(d);
+          sunday.setDate(d.getDate() - d.getDay());
+          return dateKey(sunday);
+        }
+
+        function daysWithMeals(meals) {
+          const set = new Set();
+          for (const meal of meals) set.add(dateKey(new Date(meal.timestamp)));
+          return set;
+        }
+
+        function weeksWithMeals(meals) {
+          const set = new Set();
+          for (const meal of meals) set.add(weekKey(new Date(meal.timestamp)));
+          return set;
+        }
+
+        function addDays(date, n) {
+          const d = new Date(date);
+          d.setDate(d.getDate() + n);
+          return d;
+        }
+
+        function startOfWeekSunday(date) {
+          const d = new Date(date);
+          d.setHours(0, 0, 0, 0);
+          d.setDate(d.getDate() - d.getDay());
+          return d;
+        }
+
+        function getWeekStart(offset) {
+          const start = startOfWeekSunday(new Date());
+          return addDays(start, offset * 7);
+        }
+
+        function formatWeekRange(weekStart) {
+          const weekEnd = addDays(weekStart, 6);
+          const opts = { month: "short", day: "numeric" };
+          const a = weekStart.toLocaleDateString(undefined, opts);
+          const b = weekEnd.toLocaleDateString(undefined, opts);
+          return a + " – " + b;
+        }
+
+        function computeDayStreak(meals) {
+          const days = daysWithMeals(meals);
+          if (days.size === 0) return 0;
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          let cursor = new Date(today);
+          if (!days.has(dateKey(cursor))) cursor = addDays(cursor, -1);
+          let streak = 0;
+          while (days.has(dateKey(cursor))) {
+            streak += 1;
+            cursor = addDays(cursor, -1);
+          }
+          return streak;
+        }
+
+        function computeWeekStreak(meals) {
+          const weeks = weeksWithMeals(meals);
+          if (weeks.size === 0) return 0;
+          let cursor = startOfWeekSunday(new Date());
+          if (!weeks.has(weekKey(cursor))) cursor = addDays(cursor, -7);
+          let streak = 0;
+          while (weeks.has(weekKey(cursor))) {
+            streak += 1;
+            cursor = addDays(cursor, -7);
+          }
+          return streak;
+        }
+
+        function mealsInWeek(meals, weekStart) {
+          const startKey = dateKey(weekStart);
+          const endDate = addDays(weekStart, 7);
+          const endKey = dateKey(endDate);
+          return meals.filter(function (meal) {
+            const key = dateKey(new Date(meal.timestamp));
+            return key >= startKey && key < endKey;
+          });
+        }
+
+        function dailyAveragesForWeek(meals, weekStart) {
+          const weekMeals = mealsInWeek(meals, weekStart);
+          const buckets = {};
+          for (let i = 0; i < 7; i++) {
+            const day = addDays(weekStart, i);
+            buckets[dateKey(day)] = [];
+          }
+          for (const meal of weekMeals) {
+            const key = dateKey(new Date(meal.timestamp));
+            if (buckets[key]) buckets[key].push(computeMealScore(meal));
+          }
+          const result = [];
+          for (let i = 0; i < 7; i++) {
+            const day = addDays(weekStart, i);
+            const key = dateKey(day);
+            const scores = buckets[key];
+            const avg =
+              scores.length > 0
+                ? Math.round(scores.reduce(function (a, b) {
+                    return a + b;
+                  }, 0) / scores.length)
+                : null;
+            result.push({ date: day, key: key, avg: avg, count: scores.length });
+          }
+          return { days: result, weekMeals: weekMeals };
+        }
+
+        function weekAverageScore(weekMeals) {
+          if (weekMeals.length === 0) return null;
+          const total = weekMeals.reduce(function (sum, m) {
+            return sum + computeMealScore(m);
+          }, 0);
+          return Math.round(total / weekMeals.length);
+        }
+
+        function formatTime(iso) {
+          return new Date(iso).toLocaleString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+          });
+        }
+
+        function showToast(message) {
+          toastEl.textContent = message;
+          toastEl.classList.add("visible");
+          clearTimeout(showToast._timer);
+          showToast._timer = setTimeout(function () {
+            toastEl.classList.remove("visible");
+          }, 2200);
+        }
+
+        function updateSlider(slider, output, desc, field, zoneSet) {
+          const value = Number(slider.value);
+          output.textContent = value;
+          slider.setAttribute("aria-valuenow", String(value));
+          desc.textContent = SCALE_LABELS[value] || "";
+          field.classList.toggle("in-zone", zoneSet.has(value));
+        }
+
+        function getFormDraft() {
+          return {
+            preHunger: Number(preSlider.value),
+            postFullness: Number(postSlider.value),
+            noDistraction: noDistractionCheck.checked,
+            intentionalBreaks: intentionalBreaksCheck.checked,
+          };
+        }
+
+        function updateLiveScore() {
+          const score = computeMealScore(getFormDraft());
+          liveScoreEl.textContent = String(score);
+          applyTier(scorePreviewEl, score);
+        }
+
+        function renderWeekly(meals) {
+          const weekStart = getWeekStart(weekOffset);
+          const { days, weekMeals } = dailyAveragesForWeek(meals, weekStart);
+          const avg = weekAverageScore(weekMeals);
+
+          if (weekOffset === 0) {
+            weekLabelEl.textContent = "This week";
+          } else if (weekOffset === -1) {
+            weekLabelEl.textContent = "Last week";
+          } else {
+            weekLabelEl.textContent = formatWeekRange(weekStart);
+          }
+
+          weekNextBtn.disabled = weekOffset >= 0;
+          weekPrevBtn.disabled = false;
+
+          if (avg === null) {
+            weekAvgScoreEl.textContent = "—";
+            applyTier(weekAvgScoreEl, 0);
+          } else {
+            weekAvgScoreEl.textContent = String(avg);
+            applyTier(weekAvgScoreEl, avg);
+          }
+
+          weekSummaryMetaEl.textContent =
+            "avg score · " +
+            weekMeals.length +
+            " meal" +
+            (weekMeals.length === 1 ? "" : "s");
+
+          weekChartEl.replaceChildren();
+          const todayKey = dateKey(new Date());
+          for (const day of days) {
+            const col = document.createElement("div");
+            col.className = "bar-col";
+            if (day.key === todayKey) col.classList.add("is-today");
+
+            const valueLabel = document.createElement("span");
+            valueLabel.className = "bar-value";
+            valueLabel.textContent = day.avg !== null ? String(day.avg) : "";
+
+            const track = document.createElement("div");
+            track.className = "bar-track";
+            const fill = document.createElement("div");
+            fill.className = "bar-fill";
+            if (day.avg !== null) {
+              fill.classList.add("has-data", scoreTier(day.avg));
+              fill.style.height = day.avg + "%";
+            } else {
+              fill.style.height = "4px";
+            }
+            track.appendChild(fill);
+
+            const dayLabel = document.createElement("span");
+            dayLabel.className = "bar-day";
+            dayLabel.textContent = DAY_NAMES[day.date.getDay()];
+
+            col.append(valueLabel, track, dayLabel);
+            weekChartEl.appendChild(col);
+          }
+
+          weekHistoryListEl.replaceChildren();
+          for (let i = 0; i < WEEKS_HISTORY; i++) {
+            const offset = -i;
+            const ws = getWeekStart(offset);
+            const wm = mealsInWeek(meals, ws);
+            const wAvg = weekAverageScore(wm);
+            const li = document.createElement("li");
+            li.className = "week-history-item";
+            if (offset === weekOffset) li.classList.add("is-selected");
+
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.dataset.offset = String(offset);
+
+            const label = document.createElement("span");
+            if (offset === 0) label.textContent = "This week";
+            else if (offset === -1) label.textContent = "Last week";
+            else label.textContent = formatWeekRange(ws);
+
+            const scoreSpan = document.createElement("span");
+            scoreSpan.className = "week-history-score";
+            scoreSpan.textContent = wAvg !== null ? wAvg + " avg" : "—";
+
+            btn.append(label, scoreSpan);
+            btn.addEventListener("click", function () {
+              weekOffset = offset;
+              renderWeekly(meals);
+            });
+            li.appendChild(btn);
+            weekHistoryListEl.appendChild(li);
+          }
+        }
+
+        function renderMeals(meals) {
+          const sorted = meals.slice().sort(function (a, b) {
+            return new Date(b.timestamp) - new Date(a.timestamp);
+          });
+          mealList.replaceChildren();
+          for (const meal of sorted.slice(0, 30)) {
+            const score = computeMealScore(meal);
+            const li = document.createElement("li");
+            li.className = "meal-item";
+
+            const top = document.createElement("div");
+            top.className = "meal-row-top";
+
+            const type = document.createElement("span");
+            type.className = "meal-type";
+            type.textContent = meal.mealType || "Meal";
+
+            const actions = document.createElement("div");
+            actions.className = "meal-row-actions";
+
+            const scorePill = document.createElement("span");
+            scorePill.className = "meal-score-pill " + scoreTier(score);
+            scorePill.textContent = score;
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.type = "button";
+            deleteBtn.className = "btn-delete";
+            deleteBtn.textContent = "Delete";
+            deleteBtn.setAttribute("aria-label", "Delete " + (meal.mealType || "meal"));
+            deleteBtn.addEventListener("click", function () {
+              deleteMeal(meal.id);
+            });
+
+            actions.append(scorePill, deleteBtn);
+            top.append(type, actions);
+
+            const time = document.createElement("span");
+            time.className = "meal-time";
+            time.textContent = formatTime(meal.timestamp);
+
+            const badges = document.createElement("div");
+            badges.className = "meal-scores";
+
+            const pre = document.createElement("span");
+            pre.className = "badge" + (PRE_ZONE.has(meal.preHunger) ? " in-zone" : "");
+            pre.textContent = "Before: " + meal.preHunger;
+
+            const post = document.createElement("span");
+            post.className = "badge" + (POST_ZONE.has(meal.postFullness) ? " in-zone" : "");
+            post.textContent = "After: " + meal.postFullness;
+
+            badges.append(pre, post);
+
+            if (meal.noDistraction) {
+              const b = document.createElement("span");
+              b.className = "badge habit";
+              b.textContent = "No distraction";
+              badges.appendChild(b);
+            }
+            if (meal.intentionalBreaks) {
+              const b = document.createElement("span");
+              b.className = "badge habit";
+              b.textContent = "Breaks";
+              badges.appendChild(b);
+            }
+
+            li.append(top, time, badges);
+            mealList.appendChild(li);
+          }
+          emptyState.classList.toggle("hidden", meals.length > 0);
+        }
+
+        function refresh() {
+          const data = loadData();
+          dayStreakEl.textContent = String(computeDayStreak(data.meals));
+          weekStreakEl.textContent = String(computeWeekStreak(data.meals));
+          renderWeekly(data.meals);
+          renderMeals(data.meals);
+        }
+
+        function onFormChange() {
+          updateSlider(preSlider, preOutput, preDesc, preField, PRE_ZONE);
+          updateSlider(postSlider, postOutput, postDesc, postField, POST_ZONE);
+          updateLiveScore();
+        }
+
+        preSlider.addEventListener("input", onFormChange);
+        postSlider.addEventListener("input", onFormChange);
+        noDistractionCheck.addEventListener("change", updateLiveScore);
+        intentionalBreaksCheck.addEventListener("change", updateLiveScore);
+
+        weekPrevBtn.addEventListener("click", function () {
+          weekOffset -= 1;
+          refresh();
+        });
+        weekNextBtn.addEventListener("click", function () {
+          if (weekOffset < 0) {
+            weekOffset += 1;
+            refresh();
+          }
+        });
+
+        form.addEventListener("submit", function (e) {
+          e.preventDefault();
+          const draft = getFormDraft();
+          const score = computeMealScore(draft);
+          const data = loadData();
+          data.meals.push({
+            id: newId(),
+            timestamp: new Date().toISOString(),
+            mealType: mealTypeSelect.value,
+            preHunger: draft.preHunger,
+            postFullness: draft.postFullness,
+            noDistraction: draft.noDistraction,
+            intentionalBreaks: draft.intentionalBreaks,
+            score: score,
+          });
+          saveData(data);
+          noDistractionCheck.checked = false;
+          intentionalBreaksCheck.checked = false;
+          refresh();
+          updateLiveScore();
+          showToast("Saved · score " + score);
+        });
+
+        resetBtn.addEventListener("click", function () {
+          if (!confirm("Delete all saved meals and reset streaks? This cannot be undone.")) return;
+          localStorage.removeItem(STORAGE_KEY);
+          weekOffset = 0;
+          refresh();
+          showToast("All data cleared");
+        });
+
+        onFormChange();
+        refresh();
+      })();
+    </script>
+  </body>
+</html>
