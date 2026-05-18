@@ -100,6 +100,32 @@
         color: var(--text-muted);
         text-transform: lowercase;
       }
+      .focus-card {
+        text-align: left;
+        padding: 0.85rem 1rem;
+      }
+      .focus-label {
+        display: block;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+      }
+      .focus-meal {
+        display: block;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--accent);
+        line-height: 1.2;
+      }
+      .focus-meta {
+        display: block;
+        margin-top: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+      }
       .panel {
         background: var(--surface);
         border-radius: var(--radius);
@@ -361,11 +387,85 @@
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 0.5rem;
         margin-bottom: 0.75rem;
       }
       .section-header h2 {
         margin: 0;
         font-size: 1.1rem;
+      }
+      .section-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        flex-shrink: 0;
+      }
+      .collapsible.is-collapsed .section-header {
+        margin-bottom: 0;
+      }
+      .collapsible-trigger {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        background: none;
+        border: none;
+        font: inherit;
+        color: inherit;
+        padding: 0;
+        cursor: pointer;
+        text-align: left;
+        flex: 1;
+        min-width: 0;
+      }
+      .collapsible-trigger h2,
+      .collapsible-trigger h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+      }
+      .collapsible-trigger h3 {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+      }
+      .collapsible-chevron {
+        display: inline-block;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        transition: transform 0.2s ease;
+        width: 1rem;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .collapsible.is-collapsed .collapsible-chevron {
+        transform: rotate(-90deg);
+      }
+      .collapsible.is-collapsed .collapsible-body {
+        display: none;
+      }
+      .data-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+      }
+      .btn-secondary {
+        color: var(--accent);
+        background: var(--surface);
+        border: 1px solid var(--accent-soft);
+        box-shadow: var(--shadow);
+        padding: 0.7rem 0.75rem;
+        font-size: 0.9rem;
+      }
+      .week-history.collapsible {
+        padding-top: 1rem;
+        margin-top: 1rem;
+        border-top: 1px solid var(--accent-soft);
+      }
+      .week-history.collapsible .collapsible-trigger {
+        margin-bottom: 0.5rem;
+      }
+      .week-history.collapsible.is-collapsed .collapsible-trigger {
+        margin-bottom: 0;
       }
       .week-nav {
         display: flex;
@@ -451,17 +551,6 @@
       }
       .bar-col.is-today .bar-day {
         color: var(--accent);
-        font-weight: 600;
-      }
-      .week-history {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid var(--accent-soft);
-      }
-      .week-history h3 {
-        margin: 0 0 0.5rem;
-        font-size: 0.85rem;
-        color: var(--text-muted);
         font-weight: 600;
       }
       .week-history-list {
@@ -633,17 +722,22 @@
     <div class="app">
       <header class="header">
         <h1>Intuitive Eating Tracker</h1>
-        <p class="subtitle">Intuitive eating · hunger &amp; fullness</p>
+        <p class="subtitle">Trust your body</p>
       </header>
 
-      <section class="streaks" aria-label="Streaks">
+      <section class="streaks" aria-label="Summary">
         <div class="streak-card">
           <span class="streak-value" id="day-streak">0</span>
           <span class="streak-label">day streak</span>
         </div>
-        <div class="streak-card">
-          <span class="streak-value" id="week-streak">0</span>
-          <span class="streak-label">week streak</span>
+        <div
+          class="streak-card focus-card"
+          id="focus-card"
+          aria-label="Focus area: meal type with lowest average score in the past three weeks"
+        >
+          <span class="focus-label">Focus area</span>
+          <span class="focus-meal" id="focus-meal">—</span>
+          <span class="focus-meta" id="focus-meta">Past 3 weeks</span>
         </div>
       </section>
 
@@ -726,19 +820,49 @@
           <div class="week-summary-meta" id="week-summary-meta">avg score · 0 meals</div>
         </div>
         <div class="week-chart" id="week-chart" aria-hidden="true"></div>
-        <div class="week-history">
-          <h3>Past weeks</h3>
-          <ul class="week-history-list" id="week-history-list"></ul>
+        <div class="week-history collapsible" id="past-weeks-section">
+          <button
+            type="button"
+            class="collapsible-trigger"
+            id="past-weeks-toggle"
+            aria-expanded="true"
+            aria-controls="past-weeks-body"
+          >
+            <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            <h3>Past weeks</h3>
+          </button>
+          <div id="past-weeks-body" class="collapsible-body">
+            <ul class="week-history-list" id="week-history-list"></ul>
+          </div>
         </div>
       </section>
 
-      <section class="history" aria-label="Recent meals">
+      <div class="data-actions" aria-label="Import and export">
+        <button type="button" class="btn btn-secondary" id="export-btn">Export CSV</button>
+        <button type="button" class="btn btn-secondary" id="import-btn">Import CSV</button>
+        <input type="file" id="import-file" accept=".csv,text/csv" hidden />
+      </div>
+
+      <section class="history collapsible" id="recent-section" aria-label="Recent meals">
         <div class="section-header">
-          <h2>Recent</h2>
-          <button type="button" class="btn btn-ghost btn-sm" id="reset-btn">Reset all</button>
+          <button
+            type="button"
+            class="collapsible-trigger"
+            id="recent-toggle"
+            aria-expanded="true"
+            aria-controls="recent-body"
+          >
+            <span class="collapsible-chevron" aria-hidden="true">▾</span>
+            <h2>Recent</h2>
+          </button>
+          <div class="section-header-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="reset-btn">Reset all</button>
+          </div>
         </div>
-        <ul class="meal-list" id="meal-list"></ul>
-        <p class="empty-state" id="empty-state">No meals logged yet.</p>
+        <div id="recent-body" class="collapsible-body">
+          <ul class="meal-list" id="meal-list"></ul>
+          <p class="empty-state" id="empty-state">No meals logged yet.</p>
+        </div>
       </section>
     </div>
 
@@ -747,8 +871,20 @@
     <script>
       (function () {
         const STORAGE_KEY = "meal-tracker-data";
+        const UI_STATE_KEY = "meal-tracker-ui";
         const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         const WEEKS_HISTORY = 12;
+        const CSV_HEADERS = [
+          "id",
+          "timestamp",
+          "mealType",
+          "preHunger",
+          "postFullness",
+          "noDistraction",
+          "intentionalBreaks",
+          "score",
+        ];
+        const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
 
         const SCALE_LABELS = {
           1: "Starving, no energy, very weak",
@@ -783,7 +919,9 @@
         const mealList = document.getElementById("meal-list");
         const emptyState = document.getElementById("empty-state");
         const dayStreakEl = document.getElementById("day-streak");
-        const weekStreakEl = document.getElementById("week-streak");
+        const focusMealEl = document.getElementById("focus-meal");
+        const focusMetaEl = document.getElementById("focus-meta");
+        const focusCardEl = document.getElementById("focus-card");
         const resetBtn = document.getElementById("reset-btn");
         const toastEl = document.getElementById("toast");
         const weekPrevBtn = document.getElementById("week-prev");
@@ -793,6 +931,13 @@
         const weekSummaryMetaEl = document.getElementById("week-summary-meta");
         const weekChartEl = document.getElementById("week-chart");
         const weekHistoryListEl = document.getElementById("week-history-list");
+        const exportBtn = document.getElementById("export-btn");
+        const importBtn = document.getElementById("import-btn");
+        const importFileInput = document.getElementById("import-file");
+        const recentSection = document.getElementById("recent-section");
+        const recentToggle = document.getElementById("recent-toggle");
+        const pastWeeksSection = document.getElementById("past-weeks-section");
+        const pastWeeksToggle = document.getElementById("past-weeks-toggle");
 
         let weekOffset = 0;
 
@@ -868,6 +1013,198 @@
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
         }
 
+        function loadUiState() {
+          try {
+            const raw = localStorage.getItem(UI_STATE_KEY);
+            return raw ? JSON.parse(raw) : {};
+          } catch {
+            return {};
+          }
+        }
+
+        function saveUiState(state) {
+          localStorage.setItem(UI_STATE_KEY, JSON.stringify(state));
+        }
+
+        function setCollapsible(section, toggle, collapsed) {
+          section.classList.toggle("is-collapsed", collapsed);
+          toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        }
+
+        function initCollapsible(section, toggle, stateKey) {
+          const state = loadUiState();
+          const collapsed = !!state[stateKey];
+          setCollapsible(section, toggle, collapsed);
+          toggle.addEventListener("click", function () {
+            const isCollapsed = !section.classList.contains("is-collapsed");
+            setCollapsible(section, toggle, isCollapsed);
+            const ui = loadUiState();
+            ui[stateKey] = isCollapsed;
+            saveUiState(ui);
+          });
+        }
+
+        function escapeCsv(value) {
+          const s = String(value == null ? "" : value);
+          if (/[",\n\r]/.test(s)) return '"' + s.replace(/"/g, '""') + '"';
+          return s;
+        }
+
+        function parseCsvLine(line) {
+          const result = [];
+          let cur = "";
+          let inQuotes = false;
+          for (let i = 0; i < line.length; i++) {
+            const ch = line[i];
+            if (inQuotes) {
+              if (ch === '"') {
+                if (line[i + 1] === '"') {
+                  cur += '"';
+                  i++;
+                } else {
+                  inQuotes = false;
+                }
+              } else {
+                cur += ch;
+              }
+            } else if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === ",") {
+              result.push(cur);
+              cur = "";
+            } else {
+              cur += ch;
+            }
+          }
+          result.push(cur);
+          return result;
+        }
+
+        function parseBool(value) {
+          const v = String(value || "")
+            .trim()
+            .toLowerCase();
+          return v === "true" || v === "1" || v === "yes";
+        }
+
+        function normalizeMealRow(row) {
+          const pre = Number(row.prehunger);
+          const post = Number(row.postfullness);
+          if (!row.timestamp || isNaN(pre) || isNaN(post)) return null;
+          if (pre < 1 || pre > 10 || post < 1 || post > 10) return null;
+
+          const meal = {
+            id: row.id ? String(row.id).trim() : newId(),
+            timestamp: String(row.timestamp).trim(),
+            mealType: row.mealtype ? String(row.mealtype).trim() : "Snack",
+            preHunger: pre,
+            postFullness: post,
+            noDistraction: parseBool(row.nodistraction),
+            intentionalBreaks: parseBool(row.intentionalbreaks),
+          };
+          if (!MEAL_TYPES.includes(meal.mealType)) meal.mealType = "Snack";
+          if (isNaN(Date.parse(meal.timestamp))) return null;
+          meal.score = computeMealScore(meal);
+          return meal;
+        }
+
+        function mealsToCsv(meals) {
+          const lines = [CSV_HEADERS.join(",")];
+          for (const meal of meals) {
+            const score = meal.score != null ? meal.score : computeMealScore(meal);
+            lines.push(
+              [
+                escapeCsv(meal.id),
+                escapeCsv(meal.timestamp),
+                escapeCsv(meal.mealType || "Snack"),
+                escapeCsv(meal.preHunger),
+                escapeCsv(meal.postFullness),
+                escapeCsv(meal.noDistraction ? "true" : "false"),
+                escapeCsv(meal.intentionalBreaks ? "true" : "false"),
+                escapeCsv(score),
+              ].join(",")
+            );
+          }
+          return lines.join("\n");
+        }
+
+        function parseCsv(text) {
+          const cleaned = text.replace(/^\uFEFF/, "").trim();
+          if (!cleaned) return [];
+          const lines = cleaned.split(/\r?\n/).filter(function (line) {
+            return line.trim().length > 0;
+          });
+          if (lines.length < 2) return [];
+
+          const headers = parseCsvLine(lines[0]).map(function (h) {
+            return h.trim().toLowerCase();
+          });
+          const meals = [];
+          for (let i = 1; i < lines.length; i++) {
+            const cells = parseCsvLine(lines[i]);
+            const row = {};
+            for (let j = 0; j < headers.length; j++) {
+              row[headers[j]] = cells[j] != null ? cells[j].trim() : "";
+            }
+            const meal = normalizeMealRow(row);
+            if (meal) meals.push(meal);
+          }
+          return meals;
+        }
+
+        function exportCsv() {
+          const data = loadData();
+          if (data.meals.length === 0) {
+            showToast("Nothing to export");
+            return;
+          }
+          const csv = mealsToCsv(data.meals);
+          const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "meal-log-" + dateKey(new Date()) + ".csv";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          showToast("Exported " + data.meals.length + " meals");
+        }
+
+        function importCsvFromText(text) {
+          const imported = parseCsv(text);
+          if (imported.length === 0) {
+            showToast("No valid rows in CSV");
+            return;
+          }
+          const merge = confirm(
+            "Import " +
+              imported.length +
+              " meal(s)?\n\nOK = merge (matching IDs update existing entries)\nCancel = don't import"
+          );
+          if (!merge) return;
+
+          const data = loadData();
+          const byId = {};
+          for (const meal of data.meals) byId[meal.id] = meal;
+
+          let added = 0;
+          let updated = 0;
+          for (const meal of imported) {
+            if (byId[meal.id]) {
+              byId[meal.id] = meal;
+              updated += 1;
+            } else {
+              byId[meal.id] = meal;
+              added += 1;
+            }
+          }
+          data.meals = Object.values(byId);
+          saveData(data);
+          refresh();
+          showToast("Imported · " + added + " new, " + updated + " updated");
+        }
+
         function dateKey(date) {
           const y = date.getFullYear();
           const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -886,12 +1223,6 @@
         function daysWithMeals(meals) {
           const set = new Set();
           for (const meal of meals) set.add(dateKey(new Date(meal.timestamp)));
-          return set;
-        }
-
-        function weeksWithMeals(meals) {
-          const set = new Set();
-          for (const meal of meals) set.add(weekKey(new Date(meal.timestamp)));
           return set;
         }
 
@@ -936,17 +1267,74 @@
           return streak;
         }
 
-        function computeWeekStreak(meals) {
-          const weeks = weeksWithMeals(meals);
-          if (weeks.size === 0) return 0;
-          let cursor = startOfWeekSunday(new Date());
-          if (!weeks.has(weekKey(cursor))) cursor = addDays(cursor, -7);
-          let streak = 0;
-          while (weeks.has(weekKey(cursor))) {
-            streak += 1;
-            cursor = addDays(cursor, -7);
+        function mealsInLastThreeWeeks(meals) {
+          const cutoff = new Date();
+          cutoff.setHours(0, 0, 0, 0);
+          cutoff.setDate(cutoff.getDate() - 20);
+          return meals.filter(function (meal) {
+            return new Date(meal.timestamp) >= cutoff;
+          });
+        }
+
+        function computeOpportunity(meals) {
+          const recent = mealsInLastThreeWeeks(meals);
+          if (recent.length === 0) return null;
+
+          const stats = {};
+          for (let i = 0; i < MEAL_TYPES.length; i++) {
+            stats[MEAL_TYPES[i]] = { total: 0, count: 0 };
           }
-          return streak;
+
+          for (let i = 0; i < recent.length; i++) {
+            const meal = recent[i];
+            const type =
+              MEAL_TYPES.indexOf(meal.mealType) >= 0 ? meal.mealType : "Snack";
+            const score = computeMealScore(meal);
+            stats[type].total += score;
+            stats[type].count += 1;
+          }
+
+          let worst = null;
+          for (let i = 0; i < MEAL_TYPES.length; i++) {
+            const type = MEAL_TYPES[i];
+            if (stats[type].count === 0) continue;
+            const avg = stats[type].total / stats[type].count;
+            if (
+              !worst ||
+              avg < worst.avg ||
+              (avg === worst.avg && stats[type].count > worst.count)
+            ) {
+              worst = {
+                type: type,
+                avg: Math.round(avg),
+                count: stats[type].count,
+              };
+            }
+          }
+          return worst;
+        }
+
+        function renderFocusArea(meals) {
+          const opp = computeOpportunity(meals);
+          if (!opp) {
+            focusMealEl.textContent = "—";
+            focusMetaEl.textContent = "Log meals to see a pattern";
+            focusCardEl.setAttribute(
+              "aria-label",
+              "Focus area: log meals in the past three weeks"
+            );
+            return;
+          }
+          focusMealEl.textContent = opp.type;
+          focusMetaEl.textContent = opp.avg + " avg · past 3 weeks";
+          focusCardEl.setAttribute(
+            "aria-label",
+            "Focus area: " +
+              opp.type +
+              " has the lowest average score, " +
+              opp.avg +
+              ", over the past three weeks"
+          );
         }
 
         function mealsInWeek(meals, weekStart) {
@@ -1205,7 +1593,7 @@
         function refresh() {
           const data = loadData();
           dayStreakEl.textContent = String(computeDayStreak(data.meals));
-          weekStreakEl.textContent = String(computeWeekStreak(data.meals));
+          renderFocusArea(data.meals);
           renderWeekly(data.meals);
           renderMeals(data.meals);
         }
@@ -1263,10 +1651,30 @@
           showToast("All data cleared");
         });
 
+        exportBtn.addEventListener("click", exportCsv);
+        importBtn.addEventListener("click", function () {
+          importFileInput.click();
+        });
+        importFileInput.addEventListener("change", function () {
+          const file = importFileInput.files && importFileInput.files[0];
+          importFileInput.value = "";
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function () {
+            importCsvFromText(String(reader.result || ""));
+          };
+          reader.onerror = function () {
+            showToast("Could not read file");
+          };
+          reader.readAsText(file);
+        });
+
+        initCollapsible(recentSection, recentToggle, "recentCollapsed");
+        initCollapsible(pastWeeksSection, pastWeeksToggle, "pastWeeksCollapsed");
+
         onFormChange();
         refresh();
       })();
     </script>
   </body>
 </html>
-
