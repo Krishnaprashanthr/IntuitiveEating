@@ -1809,11 +1809,13 @@
             score: score,
           });
           saveData(data);
-          noDistractionCheck.checked = false;
-          intentionalBreaksCheck.checked = false;
+          noDistractionCheck.checked = true;
+          intentionalBreaksCheck.checked = true;
+          preSlider.value = "3";
+          postSlider.value = "8";
           setMealDateToToday();
           refresh();
-          updateLiveScore();
+          onFormChange();
           showToast("Saved · score " + score);
         });
 
