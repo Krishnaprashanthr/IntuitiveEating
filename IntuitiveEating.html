@@ -851,12 +851,12 @@
         <details class="scoring-help">
           <summary>How scoring works (0–100)</summary>
           <ul>
-            <li><strong>40 pts</strong> — hunger before eating in zone (3–4)</li>
-            <li><strong>40 pts</strong> — fullness after eating in zone (6–7)</li>
-            <li><strong>10 pts</strong> — no distraction while eating</li>
+            <li><strong>30 pts</strong> — hunger before eating in zone (3–4)</li>
+            <li><strong>40 pts</strong> — fullness after eating in zone (7 and less)</li>
+            <li><strong>20 pts</strong> — no distraction while eating</li>
             <li><strong>10 pts</strong> — intentional breaks during the meal</li>
           </ul>
-          <p>Partial credit for near-zone hunger (2, 5) or fullness (5, 8).</p>
+          <p>Partial credit for near-zone hunger (2) or fullness (8).</p>
         </details>
 
         <button type="submit" class="btn btn-primary">Save meal</button>
@@ -1080,22 +1080,21 @@
         }
 
         function hungerPoints(pre) {
-          if (pre === 3 || pre === 4) return 40;
-          if (pre === 2 || pre === 5) return 24;
-          if (pre === 1 || pre === 6) return 10;
+          if (pre === 3 || pre === 4) return 30;
+          if (pre === 2) return 15;
+          if (pre === 1) return 10;
           return 0;
         }
 
         function fullnessPoints(post) {
-          if (post === 6 || post === 7) return 40;
-          if (post === 5 || post === 8) return 24;
-          if (post === 4 || post === 9) return 10;
+          if (post <= 7) return 40;
+          if (post === 8) return 20;
           return 0;
         }
 
         function computeMealScore(meal) {
           let score = hungerPoints(meal.preHunger) + fullnessPoints(meal.postFullness);
-          if (meal.noDistraction) score += 10;
+          if (meal.noDistraction) score += 20;
           if (meal.intentionalBreaks) score += 10;
           return score;
         }
