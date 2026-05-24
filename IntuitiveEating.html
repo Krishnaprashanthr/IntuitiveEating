@@ -149,7 +149,8 @@
         margin-bottom: 0.4rem;
       }
       .field select,
-      .field input[type="date"] {
+      .field input[type="date"],
+      .field textarea {
         width: 100%;
         max-width: 100%;
         min-width: 0;
@@ -161,6 +162,11 @@
         background: var(--bg);
         color: var(--text);
         appearance: none;
+      }
+      .field textarea {
+        min-height: 4.5rem;
+        resize: vertical;
+        line-height: 1.45;
       }
       .field select {
         -webkit-appearance: none;
@@ -174,6 +180,10 @@
         font-size: 0.8rem;
         color: var(--text-muted);
         font-weight: 400;
+      }
+      .field-optional {
+        font-weight: 400;
+        color: var(--text-muted);
       }
       .checkboxes {
         display: flex;
@@ -717,6 +727,13 @@
         font-size: 0.8rem;
         color: var(--text-muted);
       }
+      .meal-notes {
+        margin: 0.15rem 0 0;
+        font-size: 0.85rem;
+        line-height: 1.45;
+        color: var(--text);
+        white-space: pre-wrap;
+      }
       .meal-scores {
         display: flex;
         gap: 0.5rem;
@@ -848,6 +865,16 @@
 
         <p class="zone-hint">Aim for the blue zone: hunger 3–4 before, fullness 6–7 after.</p>
 
+        <div class="field">
+          <label for="meal-notes">Notes or feelings <span class="field-optional">(optional)</span></label>
+          <textarea
+            id="meal-notes"
+            name="mealNotes"
+            rows="3"
+            placeholder="How did this meal feel? Anything you want to remember…"
+          ></textarea>
+        </div>
+
         <details class="scoring-help">
           <summary>How scoring works (0–100)</summary>
           <ul>
@@ -947,6 +974,7 @@
           "noDistraction",
           "intentionalBreaks",
           "score",
+          "notes",
         ];
         const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"];
         const WEEK_TAB_OPTIONS = [{ id: "", label: "All" }].concat(
@@ -984,6 +1012,7 @@
         const mealTypeSelect = document.getElementById("meal-type");
         const noDistractionCheck = document.getElementById("no-distraction");
         const intentionalBreaksCheck = document.getElementById("intentional-breaks");
+        const mealNotesInput = document.getElementById("meal-notes");
         const liveScoreEl = document.getElementById("live-score");
         const scorePreviewEl = document.getElementById("score-preview");
         const mealList = document.getElementById("meal-list");
@@ -1103,6 +1132,58 @@
           if (score >= 75) return "tier-high";
           if (score >= 45) return "tier-mid";
           return "tier-low";
+        }
+
+        const SCORE_TOAST_POOLS = {
+          perfect: [
+            "Perfect {score}. Your sliders didn't stand a chance today.",
+            "{score}/100. Intuitive eating called — you picked up on the first ring.",
+            "A flawless {score}. Even your hunger cues are taking a bow.",
+            "Score: {score}. You ate with intention and the math noticed.",
+            "All {score} points. Congratulations, you are statistically delicious.",
+            "{score} out of 100. You are the master of intuitive eating.",
+            "I am so proud of you. {score} out of 100.",
+            "Hip hip hooray! {score} out of 100 my love.",
+          ],
+          high: [
+            "{score} points. Your body said thanks and actually meant it.",
+            "Solid {score}. Not perfect, but your stomach isn't grading on a curve.",
+            "Score: {score}. That meal knew what it was doing.",
+            "{score}/100 — mostly tuned in, briefly distracted by how good this app is.",
+            "You scored {score}. Pretty respectable for someone who was busy eating.",
+            "{score} points. The blue zone sends its regards.",
+            "A tidy {score}. I think you can score more.",
+          ],
+          low: [
+            "Score: {score}. Numbers are boring; listening to your body isn't.",
+            "{score}/100. Rome wasn't eaten in a day — neither was intuitive eating mastered in one meal.",
+            "A gentle {score}. Your body isn't a spreadsheet, even if we act like it is.",
+            "Score: {score}. Be kind to yourself — the next meal is a fresh draft.",
+            "{score}/100. Not every meal is a masterpiece. Some are just lunch.",
+            "Come on, {score} points? You can do better.",
+            "You just need a little more practice. {score} out of 100.",
+            "My grandpa can do better than that:P. {score} out of 100.",
+          ],
+        };
+
+        const lastScoreToastIndex = { perfect: -1, high: -1, low: -1 };
+
+        function pickScoreToast(poolKey, score) {
+          const pool = SCORE_TOAST_POOLS[poolKey];
+          let index = 0;
+          if (pool.length > 1) {
+            do {
+              index = Math.floor(Math.random() * pool.length);
+            } while (index === lastScoreToastIndex[poolKey]);
+          }
+          lastScoreToastIndex[poolKey] = index;
+          return pool[index].replace(/\{score\}/g, String(score));
+        }
+
+        function toastForScore(score) {
+          if (score === 100) return pickScoreToast("perfect", score);
+          if (score >= 80) return pickScoreToast("high", score);
+          return pickScoreToast("low", score);
         }
 
         function applyTier(el, score) {
@@ -1234,6 +1315,8 @@
             noDistraction: parseBool(row.nodistraction),
             intentionalBreaks: parseBool(row.intentionalbreaks),
           };
+          const notes = row.notes ? String(row.notes).trim() : "";
+          if (notes) meal.notes = notes;
           if (!MEAL_TYPES.includes(meal.mealType)) meal.mealType = "Snack";
           if (isNaN(Date.parse(meal.timestamp))) return null;
           meal.score = computeMealScore(meal);
@@ -1254,6 +1337,7 @@
                 escapeCsv(meal.noDistraction ? "true" : "false"),
                 escapeCsv(meal.intentionalBreaks ? "true" : "false"),
                 escapeCsv(score),
+                escapeCsv(meal.notes || ""),
               ].join(",")
             );
           }
@@ -1757,6 +1841,12 @@
             }
 
             li.append(top, time, badges);
+            if (meal.notes) {
+              const notes = document.createElement("p");
+              notes.className = "meal-notes";
+              notes.textContent = meal.notes;
+              li.appendChild(notes);
+            }
             mealList.appendChild(li);
           }
           emptyState.classList.toggle("hidden", meals.length > 0);
@@ -1764,7 +1854,11 @@
 
         function refresh() {
           const data = loadData();
-          dayStreakEl.textContent = String(computeDayStreak(data.meals));
+          var dayStreak = String(computeDayStreak(data.meals));
+          if (dayStreak >= 7) {
+            dayStreak = dayStreak + "🥳";
+          }
+          dayStreakEl.textContent = dayStreak;
           renderFocusArea(data.meals);
           renderWeekly(data.meals);
           renderMeals(data.meals);
@@ -1800,9 +1894,14 @@
             return;
           }
           const draft = getFormDraft();
+          if (draft.postFullness <= draft.preHunger) {
+            showToast("Wait, you're more hungry than you started?");
+            return;
+          }
           const score = computeMealScore(draft);
+          const notes = mealNotesInput.value.trim();
           const data = loadData();
-          data.meals.push({
+          const meal = {
             id: newId(),
             timestamp: timestampFromMealDate(mealDate),
             mealType: mealTypeSelect.value,
@@ -1811,16 +1910,19 @@
             noDistraction: draft.noDistraction,
             intentionalBreaks: draft.intentionalBreaks,
             score: score,
-          });
+          };
+          if (notes) meal.notes = notes;
+          data.meals.push(meal);
           saveData(data);
           noDistractionCheck.checked = true;
           intentionalBreaksCheck.checked = true;
+          mealNotesInput.value = "";
           preSlider.value = "3";
           postSlider.value = "7";
           setMealDateToToday();
           refresh();
           onFormChange();
-          showToast("Saved · score " + score);
+          showToast(toastForScore(score));
         });
 
         resetBtn.addEventListener("click", function () {
