@@ -980,18 +980,6 @@
           const lastSlash = path.lastIndexOf("/");
           return path.slice(0, lastSlash + 1);
         })();
-        const REMINDER_MESSAGES = [
-          "Your stomach called. It left a voicemail. Log a meal before it calls again.",
-          "7 PM and no log yet? Your hunger scale is feeling neglected.",
-          "Plot twist: you forgot to tell us how today felt. The app is mildly concerned.",
-          "No entry today. Your intuitive eating streak is giving you side-eye.",
-          "It's 7 PM. Did you eat? The sliders are bored.",
-          "Friendly nudge: your body had thoughts today. Write one down?",
-          "The blue zone misses you. Log something before bedtime guilt kicks in.",
-          "Zero meals logged today. Even your snack drawer thinks that's suspicious.",
-          "Your hunger cues are tap-dancing for attention. One log, please.",
-          "7 PM check-in: intuitive eating can't read minds. Yet.",
-        ];
         const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         const WEEKS_HISTORY = 12;
         const CSV_HEADERS = [
@@ -1690,6 +1678,7 @@
         }
 
         let pageReminderTimer = null;
+        let reminderShowInProgress = false;
 
         function isReminderEnabled() {
           return !!loadUiState().reminderEnabled;
@@ -1722,10 +1711,6 @@
           return reminder;
         }
 
-        function pickReminderMessage() {
-          return REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
-        }
-
         function reminderTagForToday() {
           return "daily-reminder-" + dateKey(new Date());
         }
@@ -1737,15 +1722,31 @@
           }
         }
 
+        function getReminderStatePayload() {
+          const today = dateKey(new Date());
+          return {
+            notifiedDate: getReminderNotifiedDate(),
+            hasMealToday: hasMealOnDate(today),
+          };
+        }
+
+        async function syncReminderStateToServiceWorker() {
+          await postToServiceWorker({
+            type: "SYNC_REMINDER_STATE",
+            notifiedDate: getReminderNotifiedDate(),
+            hasMealToday: hasMealOnDate(dateKey(new Date())),
+          });
+        }
+
         async function postToServiceWorker(message) {
           if (!("serviceWorker" in navigator)) return;
           const registration = await navigator.serviceWorker.ready;
           if (registration.active) registration.active.postMessage(message);
         }
 
-        function cancelDailyReminder() {
+        async function cancelDailyReminder() {
           clearPageReminderTimer();
-          postToServiceWorker({ type: "CANCEL_REMINDER" });
+          await postToServiceWorker({ type: "CANCEL_REMINDER" });
         }
 
         async function registerServiceWorker() {
@@ -1763,31 +1764,26 @@
           const today = dateKey(new Date());
           if (hasMealOnDate(today)) return;
           if (getReminderNotifiedDate() === today) return;
+          if (reminderShowInProgress) return;
           if (!("Notification" in window) || Notification.permission !== "granted") return;
 
+          reminderShowInProgress = true;
+          await syncReminderStateToServiceWorker();
+          await postToServiceWorker({ type: "CANCEL_REMINDER" });
+          await postToServiceWorker({
+            type: "SHOW_REMINDER",
+            tag: reminderTagForToday(),
+            hasMealToday: hasMealOnDate(today),
+          });
           setReminderNotifiedToday();
-          const title = "Intuitive Eating";
-          const body = pickReminderMessage();
-          const tag = reminderTagForToday();
-          const options = {
-            body: body,
-            tag: tag,
-            icon: APP_BASE + "android-chrome-192x192.png",
-            badge: APP_BASE + "android-chrome-192x192.png",
-            data: { url: APP_BASE + "IntuitiveEating.html" },
-          };
-
-          if ("serviceWorker" in navigator) {
-            const registration = await navigator.serviceWorker.ready;
-            await registration.showNotification(title, options);
-          } else {
-            new Notification(title, options);
-          }
+          await syncReminderStateToServiceWorker();
+          reminderShowInProgress = false;
         }
 
         async function updateDailyReminderSchedule() {
           clearPageReminderTimer();
           await postToServiceWorker({ type: "CANCEL_REMINDER" });
+          await syncReminderStateToServiceWorker();
 
           if (!isReminderEnabled()) return;
           if (!("Notification" in window) || Notification.permission !== "granted") return;
@@ -1798,21 +1794,19 @@
 
           const reminderAt = getReminderTimeToday().getTime();
           const tag = reminderTagForToday();
+          const state = getReminderStatePayload();
 
           if (Date.now() >= reminderAt) {
             await showDailyReminderNotification();
             return;
           }
 
-          const delay = reminderAt - Date.now();
-          pageReminderTimer = setTimeout(function () {
-            showDailyReminderNotification();
-          }, delay);
-
           await postToServiceWorker({
             type: "SCHEDULE_REMINDER",
             at: reminderAt,
             tag: tag,
+            notifiedDate: state.notifiedDate,
+            hasMealToday: state.hasMealToday,
           });
         }
 

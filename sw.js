@@ -13,6 +13,11 @@ const REMINDER_MESSAGES = [
 
 let reminderTimer = null;
 let pendingReminder = null;
+let showingReminder = false;
+let reminderState = {
+  notifiedDate: "",
+  hasMealToday: false,
+};
 
 function pickMessage() {
   return REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
@@ -38,13 +43,26 @@ function appUrl() {
 }
 
 function showReminder(tag) {
-  return self.registration.showNotification("Intuitive Eating", {
-    body: pickMessage(),
-    tag: tag,
-    icon: iconUrl(),
-    badge: iconUrl(),
-    data: { url: appUrl() },
-  });
+  const today = tag.replace("daily-reminder-", "");
+  if (reminderState.hasMealToday) return Promise.resolve();
+  if (reminderState.notifiedDate === today) return Promise.resolve();
+  if (showingReminder) return Promise.resolve();
+
+  showingReminder = true;
+  reminderState.notifiedDate = today;
+  const message = pickMessage();
+  return self.registration
+    .showNotification(message, {
+      body: "Tap to log today's meal",
+      tag: tag,
+      renotify: false,
+      icon: iconUrl(),
+      badge: iconUrl(),
+      data: { url: appUrl(), notifiedDate: today },
+    })
+    .finally(function () {
+      showingReminder = false;
+    });
 }
 
 function scheduleReminder(at, tag) {
@@ -52,8 +70,9 @@ function scheduleReminder(at, tag) {
   pendingReminder = { at: at, tag: tag };
   const delay = at - Date.now();
   if (delay <= 0) {
+    const reminder = pendingReminder;
     pendingReminder = null;
-    return showReminder(tag);
+    return showReminder(reminder.tag);
   }
   reminderTimer = setTimeout(function () {
     const reminder = pendingReminder;
@@ -75,12 +94,18 @@ self.addEventListener("message", function (event) {
   const data = event.data;
   if (!data || !data.type) return;
 
-  if (data.type === "SCHEDULE_REMINDER") {
+  if (data.type === "SYNC_REMINDER_STATE") {
+    reminderState.notifiedDate = data.notifiedDate || "";
+    reminderState.hasMealToday = !!data.hasMealToday;
+  } else if (data.type === "SCHEDULE_REMINDER") {
+    if (data.notifiedDate != null) reminderState.notifiedDate = data.notifiedDate;
+    if (data.hasMealToday != null) reminderState.hasMealToday = !!data.hasMealToday;
     scheduleReminder(data.at, data.tag);
   } else if (data.type === "CANCEL_REMINDER") {
     pendingReminder = null;
     clearReminderTimer();
   } else if (data.type === "SHOW_REMINDER") {
+    if (data.hasMealToday != null) reminderState.hasMealToday = !!data.hasMealToday;
     showReminder(data.tag);
   }
 });
