@@ -892,6 +892,11 @@
             <li><strong>10 pts</strong> — intentional breaks during the meal</li>
           </ul>
           <p>Partial credit for near-zone hunger (2) or fullness (8).</p>
+          <p style="margin-top: 0.75rem; border-top: 1px dashed var(--accent-soft); padding-top: 0.75rem; color: var(--text);">
+            <strong>A note from the developer:</strong> This app is a 100% private, free passion project built to help people practice intuitive eating. If it has helped you on your journey, consider supporting its upkeep! 
+            <a href="https://www.buymeacoffee.com/krishr" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 600; text-decoration: underline; display: block; margin-top: 0.35rem;">☕ Support the project on Buy Me a Coffee</a>
+          </p>
+          <a href="https://github.com/Krishnaprashanthr/IntuitiveEating#readme" target="_blank" rel="noopener" style="color: var(--text-muted); font-size: 0.8rem; text-decoration: underline; display: block; margin-top: 0.5rem;">📖 View full user guide & documentation on GitHub</a>
         </details>
 
         <button type="submit" class="btn btn-primary">Save meal</button>
@@ -1402,7 +1407,7 @@
           link.click();
           document.body.removeChild(link);
           URL.revokeObjectURL(url);
-          showToast("Exported " + data.meals.length + " meals");
+          showToast("Exported " + data.meals.length + " meals. Make sure you saved the file and didn't just open it in another app.");
         }
 
         function importCsvFromText(text) {
@@ -2065,14 +2070,40 @@
 
         function refresh() {
           const data = loadData();
-          var dayStreak = String(computeDayStreak(data.meals));
-          if (dayStreak >= 7) {
+          const streakNum = computeDayStreak(data.meals);
+          var dayStreak = String(streakNum);
+          if (streakNum >= 7) {
             dayStreak = dayStreak + "🥳";
           }
           dayStreakEl.textContent = dayStreak;
           renderFocusArea(data.meals);
           renderWeekly(data.meals);
           renderMeals(data.meals);
+          // Trigger streak milestone congratulations
+          checkStreakMilestone(streakNum);
+        }
+
+        function checkStreakMilestone(streak) {
+          const milestones = [30, 100, 180, 365, 500, 750, 1000];
+          if (!milestones.includes(streak)) return;
+
+          const lastNotifiedKey = "tracker-streak-notified-" + streak;
+          // Prevent showing the prompt multiple times on the same day
+          if (localStorage.getItem(lastNotifiedKey) === "true") return;
+
+          // Short delay so the UI updates and the user sees their streak change first
+          setTimeout(function () {
+            const support = confirm(
+              "🎉 Incredible! You've reached a " + streak + "-day streak of listening to your body!\n\n" +
+              "This app is a free passion project with zero ads. If it has helped you build an instinctive connection with your body over the last " + (streak === 30 ? "month" : "few months") + ", would you consider buying the developer a coffee to support its upkeep?"
+            );
+
+            localStorage.setItem(lastNotifiedKey, "true");
+
+            if (support) {
+              window.open("https://www.buymeacoffee.com/krishr", "_blank");
+            }
+          }, 800);
         }
 
         function onFormChange() {
