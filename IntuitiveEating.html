@@ -2140,6 +2140,7 @@
         resetBtn.addEventListener("click", function () {
           if (!confirm("Delete all saved meals and reset streaks? This cannot be undone.")) return;
           localStorage.removeItem(STORAGE_KEY);
+          localStorage.removeItem(REMINDER_NOTIFIED_KEY);
           weekOffset = 0;
           refresh();
           updateDailyReminderSchedule();
