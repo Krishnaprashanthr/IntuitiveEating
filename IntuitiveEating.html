@@ -471,6 +471,14 @@
         gap: 0.5rem;
         margin-bottom: 1.25rem;
       }
+      #reminder-btn {
+        grid-column: 1 / -1;
+      }
+      .btn-secondary.is-active {
+        color: var(--good);
+        border-color: #b8dcc8;
+        background: var(--good-bg);
+      }
       .btn-secondary {
         color: var(--accent);
         background: var(--surface);
@@ -929,6 +937,7 @@
       </section>
 
       <div class="data-actions" aria-label="Import and export">
+        <button type="button" class="btn btn-secondary" id="reminder-btn">Enable 7 PM reminders</button>
         <button type="button" class="btn btn-secondary" id="export-btn">Export CSV</button>
         <button type="button" class="btn btn-secondary" id="import-btn">Import CSV</button>
         <input type="file" id="import-file" accept=".csv,text/csv" hidden />
@@ -963,6 +972,26 @@
       (function () {
         const STORAGE_KEY = "meal-tracker-data";
         const UI_STATE_KEY = "meal-tracker-ui";
+        const REMINDER_NOTIFIED_KEY = "meal-tracker-reminder-notified";
+        const REMINDER_HOUR = 19;
+        const REMINDER_MINUTE = 0;
+        const APP_BASE = (function () {
+          const path = window.location.pathname;
+          const lastSlash = path.lastIndexOf("/");
+          return path.slice(0, lastSlash + 1);
+        })();
+        const REMINDER_MESSAGES = [
+          "Your stomach called. It left a voicemail. Log a meal before it calls again.",
+          "7 PM and no log yet? Your hunger scale is feeling neglected.",
+          "Plot twist: you forgot to tell us how today felt. The app is mildly concerned.",
+          "No entry today. Your intuitive eating streak is giving you side-eye.",
+          "It's 7 PM. Did you eat? The sliders are bored.",
+          "Friendly nudge: your body had thoughts today. Write one down?",
+          "The blue zone misses you. Log something before bedtime guilt kicks in.",
+          "Zero meals logged today. Even your snack drawer thinks that's suspicious.",
+          "Your hunger cues are tap-dancing for attention. One log, please.",
+          "7 PM check-in: intuitive eating can't read minds. Yet.",
+        ];
         const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         const WEEKS_HISTORY = 12;
         const CSV_HEADERS = [
@@ -1033,6 +1062,7 @@
         const weekHistoryListEl = document.getElementById("week-history-list");
         const exportBtn = document.getElementById("export-btn");
         const importBtn = document.getElementById("import-btn");
+        const reminderBtn = document.getElementById("reminder-btn");
         const importFileInput = document.getElementById("import-file");
         const recentSection = document.getElementById("recent-section");
         const recentToggle = document.getElementById("recent-toggle");
@@ -1659,6 +1689,193 @@
           }, 2200);
         }
 
+        let pageReminderTimer = null;
+
+        function isReminderEnabled() {
+          return !!loadUiState().reminderEnabled;
+        }
+
+        function setReminderEnabled(enabled) {
+          const ui = loadUiState();
+          ui.reminderEnabled = enabled;
+          saveUiState(ui);
+        }
+
+        function hasMealOnDate(dayKey) {
+          const data = loadData();
+          return data.meals.some(function (meal) {
+            return dateKey(new Date(meal.timestamp)) === dayKey;
+          });
+        }
+
+        function getReminderNotifiedDate() {
+          return localStorage.getItem(REMINDER_NOTIFIED_KEY) || "";
+        }
+
+        function setReminderNotifiedToday() {
+          localStorage.setItem(REMINDER_NOTIFIED_KEY, dateKey(new Date()));
+        }
+
+        function getReminderTimeToday() {
+          const reminder = new Date();
+          reminder.setHours(REMINDER_HOUR, REMINDER_MINUTE, 0, 0);
+          return reminder;
+        }
+
+        function pickReminderMessage() {
+          return REMINDER_MESSAGES[Math.floor(Math.random() * REMINDER_MESSAGES.length)];
+        }
+
+        function reminderTagForToday() {
+          return "daily-reminder-" + dateKey(new Date());
+        }
+
+        function clearPageReminderTimer() {
+          if (pageReminderTimer) {
+            clearTimeout(pageReminderTimer);
+            pageReminderTimer = null;
+          }
+        }
+
+        async function postToServiceWorker(message) {
+          if (!("serviceWorker" in navigator)) return;
+          const registration = await navigator.serviceWorker.ready;
+          if (registration.active) registration.active.postMessage(message);
+        }
+
+        function cancelDailyReminder() {
+          clearPageReminderTimer();
+          postToServiceWorker({ type: "CANCEL_REMINDER" });
+        }
+
+        async function registerServiceWorker() {
+          if (!("serviceWorker" in navigator)) return null;
+          try {
+            return await navigator.serviceWorker.register(APP_BASE + "sw.js", {
+              scope: APP_BASE,
+            });
+          } catch {
+            return null;
+          }
+        }
+
+        async function showDailyReminderNotification() {
+          const today = dateKey(new Date());
+          if (hasMealOnDate(today)) return;
+          if (getReminderNotifiedDate() === today) return;
+          if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+          setReminderNotifiedToday();
+          const title = "Intuitive Eating";
+          const body = pickReminderMessage();
+          const tag = reminderTagForToday();
+          const options = {
+            body: body,
+            tag: tag,
+            icon: APP_BASE + "android-chrome-192x192.png",
+            badge: APP_BASE + "android-chrome-192x192.png",
+            data: { url: APP_BASE + "IntuitiveEating.html" },
+          };
+
+          if ("serviceWorker" in navigator) {
+            const registration = await navigator.serviceWorker.ready;
+            await registration.showNotification(title, options);
+          } else {
+            new Notification(title, options);
+          }
+        }
+
+        async function updateDailyReminderSchedule() {
+          clearPageReminderTimer();
+          await postToServiceWorker({ type: "CANCEL_REMINDER" });
+
+          if (!isReminderEnabled()) return;
+          if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+          const today = dateKey(new Date());
+          if (hasMealOnDate(today)) return;
+          if (getReminderNotifiedDate() === today) return;
+
+          const reminderAt = getReminderTimeToday().getTime();
+          const tag = reminderTagForToday();
+
+          if (Date.now() >= reminderAt) {
+            await showDailyReminderNotification();
+            return;
+          }
+
+          const delay = reminderAt - Date.now();
+          pageReminderTimer = setTimeout(function () {
+            showDailyReminderNotification();
+          }, delay);
+
+          await postToServiceWorker({
+            type: "SCHEDULE_REMINDER",
+            at: reminderAt,
+            tag: tag,
+          });
+        }
+
+        function updateReminderButton() {
+          if (!reminderBtn) return;
+          if (!("Notification" in window)) {
+            reminderBtn.hidden = true;
+            return;
+          }
+          reminderBtn.hidden = false;
+          reminderBtn.disabled = false;
+          reminderBtn.classList.remove("is-active");
+          if (Notification.permission === "denied") {
+            reminderBtn.textContent = "Reminders blocked in browser settings";
+            reminderBtn.disabled = true;
+            return;
+          }
+          if (isReminderEnabled() && Notification.permission === "granted") {
+            reminderBtn.textContent = "7 PM reminders on";
+            reminderBtn.classList.add("is-active");
+            return;
+          }
+          reminderBtn.textContent = "Enable 7 PM reminders";
+        }
+
+        async function enableDailyReminder() {
+          if (!("Notification" in window)) {
+            showToast("Notifications aren't supported here");
+            return;
+          }
+          const permission = await Notification.requestPermission();
+          if (permission !== "granted") {
+            showToast("No worries — reminders stay off.");
+            updateReminderButton();
+            return;
+          }
+          setReminderEnabled(true);
+          await registerServiceWorker();
+          await updateDailyReminderSchedule();
+          updateReminderButton();
+          showToast("7 PM reminders on. We'll nag you lovingly.");
+        }
+
+        function disableDailyReminder() {
+          setReminderEnabled(false);
+          cancelDailyReminder();
+          updateReminderButton();
+          showToast("7 PM reminders off");
+        }
+
+        async function initDailyReminders() {
+          updateReminderButton();
+          if ("serviceWorker" in navigator) {
+            await registerServiceWorker();
+            navigator.serviceWorker.addEventListener("controllerchange", function () {
+              updateDailyReminderSchedule();
+            });
+          }
+          if (!("Notification" in window) || !isReminderEnabled()) return;
+          if (Notification.permission !== "granted") return;
+          await updateDailyReminderSchedule();
+        }
+
         function updateSlider(slider, output, desc, field, zoneSet) {
           const value = Number(slider.value);
           output.textContent = value;
@@ -1923,6 +2140,7 @@
           refresh();
           onFormChange();
           showToast(toastForScore(score));
+          updateDailyReminderSchedule();
         });
 
         resetBtn.addEventListener("click", function () {
@@ -1930,7 +2148,22 @@
           localStorage.removeItem(STORAGE_KEY);
           weekOffset = 0;
           refresh();
+          updateDailyReminderSchedule();
           showToast("All data cleared");
+        });
+
+        reminderBtn.addEventListener("click", function () {
+          if (isReminderEnabled() && Notification.permission === "granted") {
+            disableDailyReminder();
+            return;
+          }
+          enableDailyReminder();
+        });
+
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") {
+            updateDailyReminderSchedule();
+          }
         });
 
         exportBtn.addEventListener("click", exportCsv);
@@ -1959,6 +2192,7 @@
         initWeekTabs();
         onFormChange();
         refresh();
+        initDailyReminders();
       })();
     </script>
   </body>

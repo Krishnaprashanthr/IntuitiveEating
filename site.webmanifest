@@ -1,1 +1,21 @@
-{"name":"","short_name":"","icons":[{"src":"/android-chrome-192x192.png","sizes":"192x192","type":"image/png"},{"src":"/android-chrome-512x512.png","sizes":"512x512","type":"image/png"}],"theme_color":"#ffffff","background_color":"#ffffff","display":"standalone"}
+{
+  "name": "Intuitive Eating",
+  "short_name": "Intuitive Eating",
+  "start_url": "/IntuitiveEating/IntuitiveEating.html",
+  "scope": "/IntuitiveEating/",
+  "display": "standalone",
+  "theme_color": "#3d6b8f",
+  "background_color": "#f4f7fa",
+  "icons": [
+    {
+      "src": "/IntuitiveEating/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/IntuitiveEating/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
