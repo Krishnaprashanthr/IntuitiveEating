@@ -9,6 +9,7 @@ const REMINDER_MESSAGES = [
   "Zero meals logged today. Even your snack drawer thinks that's suspicious.",
   "Your hunger cues are tap-dancing for attention. One log, please.",
   "7 PM check-in: intuitive eating can't read minds. Yet.",
+  "Have you been mindful today? It's time to reflect.",
 ];
 
 let reminderTimer = null;
@@ -52,8 +53,8 @@ function showReminder(tag) {
   reminderState.notifiedDate = today;
   const message = pickMessage();
   return self.registration
-    .showNotification(message, {
-      body: "Tap to log today's meal",
+    .showNotification("We need to talk!", {
+      body: message,
       tag: tag,
       renotify: false,
       icon: iconUrl(),
